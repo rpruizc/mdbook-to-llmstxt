@@ -12,18 +12,15 @@ Perfect for feeding documentation to Claude, ChatGPT, or other LLMs.
 
 ## Installation
 
-Requires Python 3.10+ and git for GitHub inputs:
+Requires [uv](https://docs.astral.sh/uv/) and git for GitHub inputs:
 
 ```bash
 # Clone this repo
 git clone https://github.com/rpruizc/llmstxt.git
 cd llmstxt
 
-# Make it executable
-chmod +x mdbook_to_llms_new.py
-
-# Install runtime dependencies
-python3 -m pip install -r requirements.txt
+# Install dependencies
+uv sync
 ```
 
 ## Usage
@@ -31,41 +28,41 @@ python3 -m pip install -r requirements.txt
 ### From a GitHub repo:
 
 ```bash
-./mdbook_to_llms_new.py https://github.com/owner/repo/tree/main/docs
+uv run mdbook-to-llms https://github.com/owner/repo/tree/main/docs
 ```
 
 ### From a local directory:
 
 ```bash
-./mdbook_to_llms_new.py ~/path/to/docs
+uv run mdbook-to-llms ~/path/to/docs
 ```
 
 ### From a static docs website:
 
 ```bash
-./mdbook_to_llms_new.py https://fastapicloud.com/docs/getting-started/ --max-pages 80
+uv run mdbook-to-llms https://fastapicloud.com/docs/getting-started/ --max-pages 80
 ```
 
 ### With options:
 
 ```bash
 # Add public URLs to links
-./mdbook_to_llms_new.py https://github.com/owner/repo --link-base https://docs.example.com
+uv run mdbook-to-llms https://github.com/owner/repo --link-base https://docs.example.com
 
 # Convert .md links to .html
-./mdbook_to_llms_new.py https://github.com/owner/repo --html-links
+uv run mdbook-to-llms https://github.com/owner/repo --html-links
 
 # Only include pages from SUMMARY.md
-./mdbook_to_llms_new.py https://github.com/owner/repo --no-include-orphans
+uv run mdbook-to-llms https://github.com/owner/repo --no-include-orphans
 
 # Enable verbose logging
-./mdbook_to_llms_new.py https://github.com/owner/repo --verbose
+uv run mdbook-to-llms https://github.com/owner/repo --verbose
 
 # Restrict website crawling to a path prefix
-./mdbook_to_llms_new.py https://docs.example.com/guide/intro/ --site-prefix /guide/
+uv run mdbook-to-llms https://docs.example.com/guide/intro/ --site-prefix /guide/
 
 # Tune website crawling
-./mdbook_to_llms_new.py https://docs.example.com/docs/ --max-pages 200 --timeout 30
+uv run mdbook-to-llms https://docs.example.com/docs/ --max-pages 200 --timeout 30
 ```
 
 ## Output
@@ -79,7 +76,7 @@ If files already exist, you'll be asked if you want to replace them.
 ## Example
 
 ```bash
-./mdbook_to_llms_new.py https://github.com/rust-lang/mdBook/tree/master/guide
+uv run mdbook-to-llms https://github.com/rust-lang/mdBook/tree/master/guide
 
 # Creates:
 # outputs/rust-lang/llms.txt
@@ -94,29 +91,29 @@ Now you can share `llms-full.txt` with an LLM and ask questions about the docume
 
 ```bash
 # Install development dependencies
-pip install -r requirements-dev.txt
+uv sync --dev
 
 # Run tests for modular version
-python -m pytest test_mdbook_llms_modular.py -v
+uv run pytest test_mdbook_llms_modular.py -v
 
 # Run tests with coverage
-python -m pytest test_mdbook_llms_modular.py --cov=mdbook_llms --cov-report=html
+uv run pytest test_mdbook_llms_modular.py --cov=mdbook_llms --cov-report=html
 
 # Run both test suites
-python -m pytest test_*.py -v
+uv run pytest test_*.py -v
 ```
 
 ### Code Quality
 
 ```bash
 # Format code
-black mdbook_llms/ mdbook_to_llms_new.py test_*.py
+uv run black mdbook_llms/ mdbook_to_llms_new.py test_*.py
 
 # Lint code
-flake8 mdbook_llms/
+uv run flake8 mdbook_llms/
 
 # Type check
-mypy mdbook_llms/
+uv run mypy mdbook_llms/
 ```
 
 ### Project Structure
@@ -137,8 +134,8 @@ llmstxt/
 ├── mdbook_to_llms.py        # Legacy monolithic version
 ├── test_mdbook_llms_modular.py  # Test suite (modular)
 ├── test_mdbook_to_llms.py   # Test suite (legacy)
-├── requirements.txt         # Runtime dependencies
-├── requirements-dev.txt     # Development dependencies
+├── pyproject.toml           # Project metadata and dependencies
+├── uv.lock                  # Locked dependency versions
 ├── outputs/                 # Generated files (gitignored)
 │   └── project-name/
 │       ├── llms.txt

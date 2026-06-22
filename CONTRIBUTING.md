@@ -12,12 +12,12 @@ Thank you for your interest in contributing! This guide will help you get starte
 
 2. **Install development dependencies**
    ```bash
-   pip install -r requirements-dev.txt
+   uv sync --dev
    ```
 
 3. **Verify your setup**
    ```bash
-   python test_mdbook_to_llms.py
+   uv run pytest test_*.py
    ```
 
 ## Development Workflow
@@ -37,12 +37,12 @@ Thank you for your interest in contributing! This guide will help you get starte
 
 3. **Run tests**
    ```bash
-   python -m pytest test_mdbook_to_llms.py -v
+   uv run pytest test_mdbook_to_llms.py -v
    ```
 
 4. **Format your code**
    ```bash
-   black mdbook_to_llms.py test_mdbook_to_llms.py
+   uv run black mdbook_to_llms.py test_mdbook_to_llms.py
    ```
 
 5. **Commit your changes**

@@ -1,0 +1,35 @@
+[project]
+name = "llmstxt"
+version = "1.1.0"
+description = "Generate llms.txt and llms-full.txt from mdBook, Markdown, and static documentation websites."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+    "beautifulsoup4>=4.12.0",
+    "markdownify>=0.11.6",
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+mdbook-to-llms = "mdbook_llms.cli:main"
+
+[dependency-groups]
+dev = [
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "types-requests>=2.31.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["mdbook_to_llms", "mdbook_to_llms_new"]
+
+[tool.setuptools.packages.find]
+include = ["mdbook_llms*"]

@@ -11,14 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Sitemap index and sitemap URL discovery for website inputs
 - HTML-to-Markdown extraction for server-rendered docs pages
 - Website crawl controls: `--site-prefix`, `--max-pages`, `--timeout`, and `--user-agent`
-- Runtime dependency file in `requirements.txt`
+- uv project metadata in `pyproject.toml`
 - Comprehensive type hints throughout the codebase
 - Docstrings for all public functions (Google style)
 - Custom exception classes (`ValidationError`, `ProcessingError`)
 - Logging system with `--verbose` flag for debug output
 - Dataclasses for structured data (`GitHubRepo`, `DocEntry`, `ProcessingConfig`)
 - Test suite with 22 test cases covering critical functionality
-- Development dependencies in `requirements-dev.txt`
+- Locked dependency management with `uv.lock`
 - Contributing guidelines in `CONTRIBUTING.md`
 - Comprehensive `.gitignore` file
 - Better error messages with actionable suggestions
@@ -27,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - `DocEntry` can now carry an optional canonical URL for website-rendered links
-- Development requirements now include runtime requirements and use targeted request type stubs
+- Development dependencies now live in the `dev` dependency group
 - Refactored monolithic `main()` function into smaller, focused functions
 - Replaced `print()` statements with proper logging
 - Improved error handling with specific exception types
