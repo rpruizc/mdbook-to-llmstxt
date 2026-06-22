@@ -16,7 +16,7 @@ Requires Python 3.10+ and git:
 
 ```bash
 # Clone this repo
-git clone https://github.com/YOUR_USERNAME/llmstxt.git
+git clone https://github.com/rpruizc/llmstxt.git
 cd llmstxt
 
 # Make it executable
@@ -127,7 +127,6 @@ llmstxt/
 │       ├── llms.txt
 │       └── llms-full.txt
 ├── CONTRIBUTING.md
-├── IMPROVEMENTS.md
 ├── CHANGELOG.md
 ├── LICENSE
 └── README.md
