@@ -4,7 +4,7 @@ This document explains the modular architecture of the `mdbook_llms` package.
 
 ## Overview
 
-The codebase has been refactored from a single 1368-line file into a well-organized package with 7 focused modules, each with a clear responsibility.
+The codebase has been refactored from a single 1368-line file into a well-organized package with 8 focused modules, each with a clear responsibility.
 
 ## Module Breakdown
 
@@ -81,7 +81,17 @@ Functions:
 
 **Why separate?** Output formatting logic, easy to add new output formats.
 
-### 8. `cli.py` (314 lines)
+### 8. `site_ingester.py`
+**Purpose:** Static website ingestion
+
+Functions:
+- Discovers same-origin documentation pages from sitemaps and sidebars
+- Converts server-rendered HTML content to Markdown
+- Materializes fetched pages as temporary Markdown files for the shared renderer
+
+**Why separate?** Keeps network fetching and HTML extraction isolated from mdBook parsing and output rendering.
+
+### 9. `cli.py` (314 lines)
 **Purpose:** Command-line interface
 
 Functions:
@@ -166,6 +176,10 @@ cli.py
 ├── renderer.py
 │   ├── models.py
 │   └── markdown_utils.py
+├── site_ingester.py
+│   ├── models.py
+│   ├── markdown_utils.py
+│   └── exceptions.py
 └── exceptions.py
 
 No circular dependencies!
@@ -199,6 +213,7 @@ mdbook_llms/
 ├── markdown_utils.py: 228 lines (9 functions)
 ├── parser.py: 367 lines (10 functions)
 ├── renderer.py: 180 lines (4 functions)
+├── site_ingester.py: static website ingestion
 └── cli.py: 314 lines (7 functions)
 
 mdbook_to_llms_new.py: 10 lines (entry point)
@@ -297,7 +312,7 @@ Once comfortable with the new version, delete `mdbook_to_llms.py`.
 ## Summary
 
 The modular architecture transforms a 1368-line script into:
-- **7 focused modules** (11-367 lines each)
+- **8 focused modules**
 - **No circular dependencies**
 - **Clear separation of concerns**
 - **Easy to test, extend, and maintain**

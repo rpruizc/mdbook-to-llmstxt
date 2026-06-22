@@ -1,10 +1,6 @@
-"""
-mdBook to llms.txt converter package.
+"""Documentation to llms.txt converter package."""
 
-This package converts mdBook documentation (or any Markdown docs) into LLM-friendly text files.
-"""
-
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 from .models import GitHubRepo, DocEntry, ProcessingConfig
 from .exceptions import ValidationError, ProcessingError

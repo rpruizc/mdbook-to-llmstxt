@@ -1,10 +1,10 @@
 # mdBook to llms.txt
 
-Convert mdBook documentation (or any Markdown docs) into LLM-friendly text files.
+Convert mdBook documentation, Markdown docs, or static documentation websites into LLM-friendly text files.
 
 ## What it does
 
-Takes a docs repo and generates two files:
+Takes a docs repo or static docs website and generates two files:
 - `llms.txt` - Table of contents with links
 - `llms-full.txt` - All documentation in one file
 
@@ -12,7 +12,7 @@ Perfect for feeding documentation to Claude, ChatGPT, or other LLMs.
 
 ## Installation
 
-Requires Python 3.10+ and git:
+Requires Python 3.10+ and git for GitHub inputs:
 
 ```bash
 # Clone this repo
@@ -21,6 +21,9 @@ cd llmstxt
 
 # Make it executable
 chmod +x mdbook_to_llms_new.py
+
+# Install runtime dependencies
+python3 -m pip install -r requirements.txt
 ```
 
 ## Usage
@@ -37,6 +40,12 @@ chmod +x mdbook_to_llms_new.py
 ./mdbook_to_llms_new.py ~/path/to/docs
 ```
 
+### From a static docs website:
+
+```bash
+./mdbook_to_llms_new.py https://fastapicloud.com/docs/getting-started/ --max-pages 80
+```
+
 ### With options:
 
 ```bash
@@ -51,6 +60,12 @@ chmod +x mdbook_to_llms_new.py
 
 # Enable verbose logging
 ./mdbook_to_llms_new.py https://github.com/owner/repo --verbose
+
+# Restrict website crawling to a path prefix
+./mdbook_to_llms_new.py https://docs.example.com/guide/intro/ --site-prefix /guide/
+
+# Tune website crawling
+./mdbook_to_llms_new.py https://docs.example.com/docs/ --max-pages 200 --timeout 30
 ```
 
 ## Output
@@ -116,11 +131,13 @@ llmstxt/
 │   ├── markdown_utils.py    # Markdown processing
 │   ├── models.py            # Data models
 │   ├── parser.py            # mdBook parsing
-│   └── renderer.py          # Output rendering
+│   ├── renderer.py          # Output rendering
+│   └── site_ingester.py     # Static website ingestion
 ├── mdbook_to_llms_new.py    # Main entry point (10 lines)
 ├── mdbook_to_llms.py        # Legacy monolithic version
 ├── test_mdbook_llms_modular.py  # Test suite (modular)
 ├── test_mdbook_to_llms.py   # Test suite (legacy)
+├── requirements.txt         # Runtime dependencies
 ├── requirements-dev.txt     # Development dependencies
 ├── outputs/                 # Generated files (gitignored)
 │   └── project-name/

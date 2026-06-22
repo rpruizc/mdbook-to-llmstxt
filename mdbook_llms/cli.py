@@ -7,6 +7,7 @@ import shutil
 import sys
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 from .exceptions import ValidationError, ProcessingError
 from .git_utils import parse_github_url, materialize_input
@@ -15,6 +16,35 @@ from .parser import find_mdbook_content_root, parse_summary, add_orphan_markdown
 from .renderer import render_llms_txt, render_llms_full_txt
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_SITE_USER_AGENT = "llmstxt/1.0 (+https://github.com/rpruizc/llmstxt)"
+
+
+def is_http_url(value: str) -> bool:
+    """
+    Check whether a value is an HTTP(S) URL.
+
+    Args:
+        value: Input value
+
+    Returns:
+        True for http:// or https:// URLs
+    """
+    parsed = urlparse(value)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def is_website_input(value: str) -> bool:
+    """
+    Check whether an input should use website ingestion.
+
+    Args:
+        value: CLI input value
+
+    Returns:
+        True for non-GitHub HTTP(S) URLs
+    """
+    return is_http_url(value) and parse_github_url(value) is None
 
 
 def extract_project_name(source_label: str, title: str) -> str:
@@ -174,18 +204,25 @@ def parse_arguments() -> argparse.Namespace:
         Parsed arguments namespace
     """
     ap = argparse.ArgumentParser(
-        description="Generate llms.txt and llms-full.txt from an mdBook source directory or GitHub tree URL.",
+        description=(
+            "Generate llms.txt and llms-full.txt from an mdBook source directory, "
+            "GitHub tree URL, or static documentation website."
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s https://github.com/owner/repo/tree/main/docs
   %(prog)s ~/my-docs --link-base https://docs.example.com
   %(prog)s ./docs --html-links --no-include-orphans
+  %(prog)s https://fastapicloud.com/docs/getting-started/ --max-pages 80
         """
     )
     ap.add_argument(
         "input",
-        help="Local mdBook/docs path or GitHub URL, e.g. https://github.com/org/repo/tree/main/docs",
+        help=(
+            "Local mdBook/docs path, GitHub URL, or static docs website URL, "
+            "e.g. https://github.com/org/repo/tree/main/docs"
+        ),
     )
     ap.add_argument(
         "--out",
@@ -206,6 +243,31 @@ Examples:
         "--no-include-orphans",
         action="store_true",
         help="Only include pages referenced by SUMMARY.md.",
+    )
+    ap.add_argument(
+        "--site-prefix",
+        default=None,
+        help=(
+            "Website crawl path prefix, e.g. /docs/. Defaults to /docs/ when the "
+            "input URL is under /docs/, otherwise the input URL directory."
+        ),
+    )
+    ap.add_argument(
+        "--max-pages",
+        type=int,
+        default=100,
+        help="Maximum website pages to fetch. Default: 100.",
+    )
+    ap.add_argument(
+        "--timeout",
+        type=float,
+        default=20.0,
+        help="Website request timeout in seconds. Default: 20.",
+    )
+    ap.add_argument(
+        "--user-agent",
+        default=DEFAULT_SITE_USER_AGENT,
+        help="User agent to use when fetching websites.",
     )
     ap.add_argument(
         "--verbose",
@@ -241,7 +303,12 @@ def main() -> None:
             preliminary_project_name = input_path.name
         else:
             gh = parse_github_url(args.input)
-            preliminary_project_name = gh.owner if gh else None
+            if gh:
+                preliminary_project_name = gh.owner
+            elif is_website_input(args.input):
+                preliminary_project_name = urlparse(args.input).netloc
+            else:
+                preliminary_project_name = None
 
         # Check if output already exists
         if preliminary_project_name:
@@ -249,6 +316,41 @@ def main() -> None:
             preliminary_out_dir = base_out_dir / "outputs" / preliminary_project_name
             if not check_existing_output(preliminary_out_dir):
                 return
+
+        if is_website_input(args.input):
+            from .site_ingester import ingest_site
+
+            result = ingest_site(
+                start_url=args.input,
+                site_prefix=args.site_prefix,
+                max_pages=args.max_pages,
+                timeout=args.timeout,
+                user_agent=args.user_agent,
+            )
+            cleanup_dir = result.cleanup_dir
+            logger.info(f"Content root: {result.content_root}")
+            logger.info(f"Title: {result.title}")
+
+            base_out_dir = Path(args.out).expanduser().resolve()
+            out_dir = base_out_dir / "outputs" / result.project_name
+
+            llms_path, full_path = write_output_files(
+                out_dir=out_dir,
+                title=result.title,
+                description=result.description,
+                entries=result.entries,
+                source_label=result.source_label,
+                link_base=args.link_base,
+                html_links=args.html_links,
+            )
+
+            print("\n✓ Success!")
+            print(f"  Content root:   {result.content_root}")
+            print(f"  Pages included: {len(result.entries)}")
+            print(f"  Project name:   {result.project_name}")
+            print(f"  Wrote:          {llms_path}")
+            print(f"  Wrote:          {full_path}")
+            return
 
         # Materialize input (clone if needed)
         source_root, cleanup_dir, source_label = materialize_input(args.input)
@@ -289,7 +391,7 @@ def main() -> None:
         )
 
         # Print summary
-        print(f"\n✓ Success!")
+        print("\n✓ Success!")
         print(f"  Content root:   {content_root}")
         print(f"  Pages included: {len(entries)}")
         print(f"  Project name:   {project_name}")

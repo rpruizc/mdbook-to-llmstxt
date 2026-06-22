@@ -26,6 +26,14 @@ from mdbook_llms.parser import (
     parse_basic_toml,
     find_mdbook_content_root,
 )
+from mdbook_llms.site_ingester import (
+    default_site_prefix,
+    is_in_prefix,
+    ordered_crawl_urls,
+    parse_page,
+    parse_sitemap_xml,
+    sidebar_entries,
+)
 
 
 class TestGitHubURLParsing(unittest.TestCase):
@@ -137,6 +145,165 @@ class TestLinkProcessing(unittest.TestCase):
         """Test escaping square brackets in link text."""
         self.assertEqual(md_escape_link_text("[text]"), r"\[text\]")
         self.assertEqual(md_escape_link_text("normal"), "normal")
+
+
+class TestStaticSiteIngestion(unittest.TestCase):
+    """Test static website ingestion helpers."""
+
+    def test_parse_sitemap_index_and_urlset(self):
+        """Test parsing sitemap index and urlset XML."""
+        index_xml = """<?xml version="1.0"?>
+        <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          <sitemap><loc>https://example.com/sitemap-0.xml</loc></sitemap>
+        </sitemapindex>
+        """
+        pages, sitemaps = parse_sitemap_xml(index_xml)
+        self.assertEqual(pages, [])
+        self.assertEqual(sitemaps, ["https://example.com/sitemap-0.xml"])
+
+        urlset_xml = """<?xml version="1.0"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          <url><loc>https://example.com/docs/</loc></url>
+          <url><loc>https://example.com/docs/getting-started/</loc></url>
+        </urlset>
+        """
+        pages, sitemaps = parse_sitemap_xml(urlset_xml)
+        self.assertEqual(sitemaps, [])
+        self.assertEqual(pages, [
+            "https://example.com/docs/",
+            "https://example.com/docs/getting-started/",
+        ])
+
+    def test_default_site_prefix(self):
+        """Test conservative default site prefix inference."""
+        self.assertEqual(
+            default_site_prefix("https://fastapicloud.com/docs/getting-started/"),
+            "/docs/",
+        )
+        self.assertEqual(
+            default_site_prefix("https://example.com/guide/intro/"),
+            "/guide/intro/",
+        )
+        self.assertEqual(
+            default_site_prefix("https://example.com/guide/intro.html"),
+            "/guide/",
+        )
+        self.assertTrue(is_in_prefix("https://example.com/docs", "/docs/"))
+
+    def test_ordered_crawl_urls_filters_dedupes_and_limits(self):
+        """Test crawl ordering, prefix filtering, dedupe, and max pages."""
+        start = "https://example.com/docs/getting-started/"
+        sitemap_urls = [
+            "https://example.com/docs/getting-started/",
+            "https://example.com/docs/cli/",
+            "https://example.com/blog/post/",
+            "https://other.example.com/docs/outside/",
+        ]
+        sidebar = [
+            ("https://example.com/docs/intro/", "Getting Started"),
+            ("https://example.com/docs/cli/", "CLI"),
+        ]
+
+        urls, sections = ordered_crawl_urls(
+            sitemap_urls=sitemap_urls,
+            sidebar=sidebar,
+            fallback_links=[],
+            start_url=start,
+            prefix="/docs/",
+            max_pages=3,
+        )
+
+        self.assertEqual(urls, [
+            "https://example.com/docs/getting-started/",
+            "https://example.com/docs/cli/",
+        ])
+        self.assertEqual(sections, {
+            "https://example.com/docs/intro": "Getting Started",
+            "https://example.com/docs/cli": "CLI",
+        })
+
+    def test_starlight_sidebar_entries_preserve_sections(self):
+        """Test parsing Starlight-style sidebar groups."""
+        html = """
+        <nav class="sidebar" aria-label="Main">
+          <details open>
+            <summary><span class="large">Getting Started</span></summary>
+            <ul>
+              <li><a href="/docs/getting-started/">Quick Start</a></li>
+              <li><a href="/docs/getting-started/existing-project/">Existing</a></li>
+            </ul>
+          </details>
+          <details open>
+            <summary><span class="large">FastAPI Cloud CLI</span></summary>
+            <ul>
+              <li><a href="/docs/fastapi-cloud-cli/login/">Login</a></li>
+            </ul>
+          </details>
+        </nav>
+        """
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html, "html.parser")
+        entries = sidebar_entries(soup, "https://fastapicloud.com/docs/getting-started/")
+
+        self.assertEqual(entries, [
+            ("https://fastapicloud.com/docs/getting-started/", "Getting Started"),
+            (
+                "https://fastapicloud.com/docs/getting-started/existing-project/",
+                "Getting Started",
+            ),
+            ("https://fastapicloud.com/docs/fastapi-cloud-cli/login/", "FastAPI Cloud CLI"),
+        ])
+
+    def test_starlight_content_extraction_removes_navigation_noise(self):
+        """Test extracting clean Markdown from Starlight-style HTML."""
+        html = """
+        <html>
+          <head>
+            <title>Quick Start | FastAPI Cloud Docs</title>
+            <link rel="canonical" href="https://fastapicloud.com/docs/getting-started/">
+            <meta name="description" content="FastAPI Cloud docs">
+          </head>
+          <body>
+            <nav class="sidebar">Sidebar</nav>
+            <div class="content-panel"><h1 id="_top">Quick Start</h1></div>
+            <main>
+              <div aria-label="On this page">On this page</div>
+              <div class="sl-markdown-content">
+                <p>Get your app deployed.</p>
+                <div class="sl-heading-wrapper level-h2">
+                  <h2 id="create">Create Your Project</h2>
+                  <a class="sl-anchor-link" href="#create">
+                    <span class="sr-only">Section titled Create Your Project</span>
+                  </a>
+                </div>
+                <div class="tablist-wrapper"><ul role="tablist"><li>Using uv</li></ul></div>
+                <div role="tabpanel">
+                  <div class="expressive-code">
+                    <figure>
+                      <pre data-language="bash"><code>ignored</code></pre>
+                      <button data-code="uvx fastapi-new myapp&#x7f;cd myapp"></button>
+                    </figure>
+                  </div>
+                </div>
+              </div>
+            </main>
+            <footer>Footer</footer>
+          </body>
+        </html>
+        """
+
+        page = parse_page(html, "https://fastapicloud.com/docs/getting-started/", "Docs")
+
+        self.assertEqual(page.title, "Quick Start")
+        self.assertEqual(page.url, "https://fastapicloud.com/docs/getting-started/")
+        self.assertIn("# Quick Start", page.markdown)
+        self.assertIn("Get your app deployed.", page.markdown)
+        self.assertIn("uvx fastapi-new myapp", page.markdown)
+        self.assertIn("cd myapp", page.markdown)
+        self.assertNotIn("On this page", page.markdown)
+        self.assertNotIn("Section titled", page.markdown)
+        self.assertNotIn("Sidebar", page.markdown)
 
 
 class TestYAMLFrontmatter(unittest.TestCase):

@@ -1,5 +1,8 @@
 # Development dependencies for mdbook_to_llms
 
+# Runtime
+-r requirements.txt
+
 # Testing
 pytest>=7.0.0
 pytest-cov>=4.0.0
@@ -10,4 +13,4 @@ flake8>=6.0.0
 mypy>=1.0.0
 
 # Optional: for better type checking
-types-all>=1.0.0
+types-requests>=2.31.0

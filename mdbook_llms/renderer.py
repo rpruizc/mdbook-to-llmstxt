@@ -11,7 +11,13 @@ from .models import DocEntry
 logger = logging.getLogger(__name__)
 
 
-def link_for(rel: str, fragment: str, link_base: Optional[str], html_links: bool) -> str:
+def link_for(
+    rel: str,
+    fragment: str,
+    link_base: Optional[str],
+    html_links: bool,
+    url: Optional[str] = None,
+) -> str:
     """
     Generate appropriate link for a documentation page.
 
@@ -24,6 +30,9 @@ def link_for(rel: str, fragment: str, link_base: Optional[str], html_links: bool
     Returns:
         Complete URL string
     """
+    if url and not link_base:
+        return url + fragment
+
     href = rel
 
     if html_links:
@@ -102,7 +111,7 @@ def render_llms_txt(
         lines.append("")
 
         for e in section_entries:
-            href = link_for(e.rel, e.fragment, link_base, html_links)
+            href = link_for(e.rel, e.fragment, link_base, html_links, url=e.url)
             lines.append(f"- [{md_escape_link_text(e.title)}]({href})")
 
         lines.append("")
@@ -141,7 +150,8 @@ def render_llms_full_txt(
     lines.append("")
 
     for e in entries:
-        lines.append(f"- {e.title} — `{e.rel}`")
+        source = e.url or e.rel
+        lines.append(f"- {e.title} — `{source}`")
 
     lines.append("")
 
@@ -170,7 +180,7 @@ def render_llms_full_txt(
         lines.append("")
         lines.append(f"## {e.title}")
         lines.append("")
-        lines.append(f"Source: `{e.rel}`")
+        lines.append(f"Source: `{e.url or e.rel}`")
         lines.append("")
 
         if text:

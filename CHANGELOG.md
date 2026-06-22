@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Static website ingestion for same-origin documentation sites
+- Sitemap index and sitemap URL discovery for website inputs
+- HTML-to-Markdown extraction for server-rendered docs pages
+- Website crawl controls: `--site-prefix`, `--max-pages`, `--timeout`, and `--user-agent`
+- Runtime dependency file in `requirements.txt`
 - Comprehensive type hints throughout the codebase
 - Docstrings for all public functions (Google style)
 - Custom exception classes (`ValidationError`, `ProcessingError`)
@@ -21,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check for existing output files with user confirmation
 
 ### Changed
+- `DocEntry` can now carry an optional canonical URL for website-rendered links
+- Development requirements now include runtime requirements and use targeted request type stubs
 - Refactored monolithic `main()` function into smaller, focused functions
 - Replaced `print()` statements with proper logging
 - Improved error handling with specific exception types

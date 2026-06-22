@@ -22,6 +22,7 @@ class DocEntry:
     rel: str
     fragment: str
     section: str
+    url: Optional[str] = None
 
 
 @dataclass
